@@ -1,14 +1,8 @@
 <?php
-$host = 'sql107.infinityfree.com';
-$dbname = 'if0_41746355_chun';
-$username = 'if0_41746355';
-$password = 'raUvjxxKGu';
-
-$conn = new mysqli($host, $username, $password, $dbname);
-
-if ($conn->connect_error) {
-    die('Kết nối thất bại: ' . $conn->connect_error);
-}
-
-$conn->set_charset('utf8mb4');
-?>
+return [
+    'host' => getenv('DB_HOST') ?: 'sql111.infinityfree.com',
+    'port' => getenv('DB_PORT') ?: '3306',
+    'dbname' => getenv('DB_NAME') ?: 'if0_43313363_uth_shop',
+    'username' => getenv('DB_USER') ?: 'if0_43313363',
+    'password' => getenv('DB_PASSWORD') ?: 'u2atBKULTDxa',
+];

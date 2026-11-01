@@ -25,21 +25,43 @@ function connectDatabase(array $defaults, string $localConfigPath): PDO
         }
     }
 
-    foreach (['host', 'port', 'dbname', 'username', 'password'] as $requiredKey) {
-        if (!array_key_exists($requiredKey, $config) || ($requiredKey !== 'password' && trim((string)$config[$requiredKey]) === '')) {
+    foreach (['host', 'dbname', 'username'] as $requiredKey) {
+        if (!array_key_exists($requiredKey, $config) || trim((string)$config[$requiredKey]) === '') {
             throw new RuntimeException('Database configuration is incomplete. Set DB_* environment variables or create the local config file.');
         }
     }
 
-    try {
-        return new PDO(
-            'mysql:host=' . $config['host'] . ';port=' . $config['port'] . ';dbname=' . $config['dbname'] . ';charset=utf8mb4',
-            $config['username'],
-            $config['password'],
-            [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
-        );
-    } catch (PDOException $exception) {
-        error_log('Database connection failed: ' . $exception->getMessage());
-        throw new RuntimeException('Database connection failed. Check the DB_* configuration and database server.');
+    $config['host'] = trim((string)($config['host'] ?? 'localhost')) ?: 'localhost';
+    $config['dbname'] = trim((string)($config['dbname'] ?? 'uth_shop')) ?: 'uth_shop';
+    $config['username'] = trim((string)($config['username'] ?? 'root')) ?: 'root';
+    $config['password'] = (string)($config['password'] ?? '');
+
+    $candidatePorts = [];
+    $portValue = trim((string)($config['port'] ?? ''));
+    if ($portValue !== '') {
+        $candidatePorts[] = $portValue;
     }
+    foreach (['3307', '3306', '3308', '3309'] as $candidatePort) {
+        if (!in_array($candidatePort, $candidatePorts, true)) {
+            $candidatePorts[] = $candidatePort;
+        }
+    }
+
+    $lastException = null;
+    foreach ($candidatePorts as $candidatePort) {
+        $dsn = 'mysql:host=' . $config['host'] . ';port=' . $candidatePort . ';dbname=' . $config['dbname'] . ';charset=utf8mb4';
+        try {
+            return new PDO(
+                $dsn,
+                $config['username'],
+                $config['password'],
+                [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+            );
+        } catch (PDOException $exception) {
+            $lastException = $exception;
+        }
+    }
+
+    error_log('Database connection failed: ' . $lastException?->getMessage());
+    throw new RuntimeException('Database connection failed. Check the DB_* configuration and database server.');
 }
